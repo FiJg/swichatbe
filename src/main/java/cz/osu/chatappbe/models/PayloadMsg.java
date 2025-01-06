@@ -13,15 +13,15 @@ public class PayloadMsg {
 	private Integer senderId;
 	private Integer chatId;
 	private String content;
-	private Instant dateInstant;
+	//private Instant dateInstant;
 	private String date;
 
 	/**
 	 * File support
 	 */
-	private String fileType;
-	private String fileUrl;
-	private String fileName;
-	private Long fileSize;
+//	private String fileType;
+//	private String fileUrl;
+//	private String fileName;
+//	private Long fileSize;
 
 }

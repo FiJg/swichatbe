@@ -1,6 +1,8 @@
 package cz.osu.chatappbe.models.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.*;
 
 import javax.persistence.*;
@@ -12,6 +14,7 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatUser implements Serializable {
@@ -21,7 +24,7 @@ public class ChatUser implements Serializable {
 			joinColumns = @JoinColumn(name = "chat_user_id"),
 			inverseJoinColumns = @JoinColumn(name = "chat_room_id")
 	)
-	@JsonBackReference // prevents serialization of the back reference
+	 // prevents serialization of the back reference
 	List<ChatRoom> joinedChatRooms = new ArrayList<>();
 
 	@Id
@@ -32,7 +35,7 @@ public class ChatUser implements Serializable {
 	@OneToMany(mappedBy = "user", cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.LAZY)
 	private List<Message> messages = new ArrayList<>();
 
-	@Column(nullable = false)
+	@Column(nullable = false, unique = true)
 	private String username;
 
 	@Column(nullable = false)

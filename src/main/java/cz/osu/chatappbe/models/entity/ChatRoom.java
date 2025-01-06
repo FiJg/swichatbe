@@ -1,8 +1,10 @@
 package cz.osu.chatappbe.models.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.*;
 
 import javax.persistence.*;
@@ -16,6 +18,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class ChatRoom implements Serializable {
 
 	@Id
@@ -24,7 +27,7 @@ public class ChatRoom implements Serializable {
 	private Integer id;
 
 	@ManyToMany(mappedBy = "joinedChatRooms", fetch = FetchType.EAGER)
-	@JsonManagedReference // This side of the relationship gets serialized to break the circular dependency
+	 // This side of the relationship gets serialized to break the circular dependency
 	private List<ChatUser> joinedUsers = new ArrayList<>();
 
 	@OneToMany(mappedBy = "room", cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.LAZY)
