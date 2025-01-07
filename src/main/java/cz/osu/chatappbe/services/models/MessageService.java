@@ -92,6 +92,7 @@ public class MessageService {
 		message.getUser().setMessages(new ArrayList<>());
 		message.getUser().setJoinedChatRooms(new ArrayList<>());
 
+
 		try {
 			return objectMapper.writeValueAsString(message);  // Serialize to JSON using Jackson
 		} catch (JsonProcessingException e) {

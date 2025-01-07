@@ -2,6 +2,8 @@ package cz.osu.chatappbe.models.entity;
 
 import lombok.*;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
@@ -19,12 +21,14 @@ public class Message implements Serializable {
 	@Column(nullable = false)
 	private Integer id;
 
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "chat_room_id", nullable = false)
+	@JsonBackReference // Prevent circular reference during serialization
 	private ChatRoom room;
 
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "chat_user_id", nullable = false)
+	@JsonManagedReference // Ensure the user is serialized with the message
 	private ChatUser user;
 
 	@Column(nullable = false)
@@ -38,8 +42,8 @@ public class Message implements Serializable {
 	public String toString() {
 		return "Message{" +
 		       "id=" + id +
-		       ", room=" + room.getId() +
-		       ", user=" + user.getId() +
+				", room=" + (room != null ? room.getId() : "null") +
+				", user=" + (user != null ? user.getId() : "null") +
 		       ", content='" + content + '\'' +
 		       ", sendTime=" + sendTime +
 		       '}';

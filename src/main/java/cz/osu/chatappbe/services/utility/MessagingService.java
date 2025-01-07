@@ -69,6 +69,9 @@ public class MessagingService {
 	public List<Message> receive(String queueName) {
 		List<Message> receivedMessages = new ArrayList<>();
 
+		Object message = rabbitTemplate.receiveAndConvert(queueName);
+
+
 		while (Objects.requireNonNull(admin.getQueueInfo(queueName)).getMessageCount() != 0) {
 			receivedMessages.add(messageService.receiveFromRabbit(rabbitTemplate.receiveAndConvert(queueName)));
 		}
