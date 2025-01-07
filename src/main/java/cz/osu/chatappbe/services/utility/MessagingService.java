@@ -12,6 +12,11 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -19,6 +24,8 @@ import java.util.Optional;
 
 @Service
 public class MessagingService {
+	private static final Logger logger = LoggerFactory.getLogger(MessagingService.class);
+
 	@Autowired
 	private AmqpTemplate rabbitTemplate;
 	@Autowired
@@ -66,15 +73,35 @@ public class MessagingService {
 		rabbitTemplate.convertAndSend(exchange, messageService.prepareForRabbit(message));
 	}
 
+
+	/**
+	 * Recieves queues
+	 * @param queueName
+	 * @return
+	 */
 	public List<Message> receive(String queueName) {
 		List<Message> receivedMessages = new ArrayList<>();
 
-		Object message = rabbitTemplate.receiveAndConvert(queueName);
-
+		logger.info("Checking messages in queue: {}", queueName);
 
 		while (Objects.requireNonNull(admin.getQueueInfo(queueName)).getMessageCount() != 0) {
-			receivedMessages.add(messageService.receiveFromRabbit(rabbitTemplate.receiveAndConvert(queueName)));
+			Object message = rabbitTemplate.receiveAndConvert(queueName);
+
+			// Log the deserialized message
+			logger.debug("Raw message received from RabbitMQ: {}", message);
+
+			if (message != null) {
+				Message processedMessage = messageService.receiveFromRabbit(message);
+
+				// Log the deserialized message
+				logger.debug("Deserialized message: {}", processedMessage);
+
+
+				receivedMessages.add(processedMessage);
+			}
 		}
+		// Log the final list of messages
+		logger.info("Total messages received from queue {}: {}", queueName, receivedMessages.size());
 
 		return receivedMessages;
 	}
