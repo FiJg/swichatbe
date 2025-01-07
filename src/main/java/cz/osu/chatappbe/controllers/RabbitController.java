@@ -10,15 +10,25 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @CrossOrigin
 public class RabbitController {
+
+	private static final Logger logger = LoggerFactory.getLogger(RabbitController.class);
+
+
 	@Autowired
 	private MessagingService messagingService;
 
 	@GetMapping(value = "/api/queue")
 	public List<Message> getMessages(@RequestParam String username) {
-		System.out.println("RabbitController: queeue ");
-		return this.messagingService.receive("queue-" + username);
+		logger.info("Received request to fetch messages for user: {}", username);
+		List<Message> messages = this.messagingService.receive("queue-" + username);
+		logger.info("Fetched {} messages for user: {}", messages.size(), username);
+
+		return messages;
 	}
 }
