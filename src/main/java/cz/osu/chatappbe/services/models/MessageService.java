@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class MessageService {
@@ -85,7 +87,7 @@ public class MessageService {
 	}
 
 	// Serialize message to JSON using Jackson
-	public String prepareForRabbit(Message message) {
+	public String prepareForRabbit2(Message message) {
 		// Remove cyclic references from the message and related objects
 		message.getRoom().setMessages(new ArrayList<>());
 		message.getRoom().setJoinedUsers(new ArrayList<>());
@@ -100,6 +102,35 @@ public class MessageService {
 			throw new RuntimeException("Error serializing message for Rabbit", e);
 		}
 	}
+
+	public Map<String, Object> prepareForRabbit(Message message) {
+		// Build a plain map
+		Map<String, Object> msgMap = new HashMap<>();
+		msgMap.put("id", message.getId());
+		msgMap.put("content", message.getContent());
+		msgMap.put("sendTime", message.getSendTime().getTime());
+
+		// Only store minimal info for user
+		if (message.getUser() != null) {
+			Map<String, Object> userMap = new HashMap<>();
+			userMap.put("id", message.getUser().getId());
+			userMap.put("username", message.getUser().getUsername());
+			msgMap.put("user", userMap);
+		} else {
+			msgMap.put("user", null);
+		}
+
+		// Only store minimal info for room
+		if (message.getRoom() != null) {
+			msgMap.put("roomId", message.getRoom().getId());
+		} else {
+			msgMap.put("roomId", null);
+		}
+
+		return msgMap;
+	}
+
+
 
 	// Deserialize JSON to Message object using Jackson
 	public Message receiveFromRabbit(Object message) {

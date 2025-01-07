@@ -17,10 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+
+import static cz.osu.chatappbe.config.RabbitMQConfig.queueName;
 
 @Service
 public class MessagingService {
@@ -69,8 +68,13 @@ public class MessagingService {
 		return this.receiveMessage(msg);
 	}
 
-	public void send(String exchange, Message message) {
-		rabbitTemplate.convertAndSend(exchange, messageService.prepareForRabbit(message));
+	public void send(String queueName, Message message) {
+		Map<String, Object> preparedMessage = messageService.prepareForRabbit(message);
+
+		logger.info("Sending prepared message to queue {}: {}", queueName, preparedMessage);
+
+		// This should work now, because the Map contains only serializable data.
+		rabbitTemplate.convertAndSend(queueName, preparedMessage);
 	}
 
 
@@ -85,17 +89,16 @@ public class MessagingService {
 		logger.info("Checking messages in queue: {}", queueName);
 
 		while (Objects.requireNonNull(admin.getQueueInfo(queueName)).getMessageCount() != 0) {
-			Object message = rabbitTemplate.receiveAndConvert(queueName);
+			Object rawMessage = rabbitTemplate.receiveAndConvert(queueName);
 
-			// Log the deserialized message
-			logger.debug("Raw message received from RabbitMQ: {}", message);
+			// Log the raw message received from RabbitMQ
+			logger.debug("Raw message received from RabbitMQ: {}", rawMessage);
 
-			if (message != null) {
+			if (rawMessage != null) {
 				try {
-					Message processedMessage = messageService.receiveFromRabbit(message);
+					// Deserialize and process the message
+					Message processedMessage = messageService.receiveFromRabbit(rawMessage);
 
-
-					// Log the deserialized message
 					logger.debug("Deserialized message: {}", processedMessage);
 
 					receivedMessages.add(processedMessage);
@@ -104,7 +107,8 @@ public class MessagingService {
 				}
 			}
 		}
-		// Log the final list of messages
+
+		// Log the final list of processed messages
 		logger.info("Total messages received from queue {}: {}", queueName, receivedMessages.size());
 
 		return receivedMessages;
