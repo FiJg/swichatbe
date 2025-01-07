@@ -91,13 +91,17 @@ public class MessagingService {
 			logger.debug("Raw message received from RabbitMQ: {}", message);
 
 			if (message != null) {
-				Message processedMessage = messageService.receiveFromRabbit(message);
-
-				// Log the deserialized message
-				logger.debug("Deserialized message: {}", processedMessage);
+				try {
+					Message processedMessage = messageService.receiveFromRabbit(message);
 
 
-				receivedMessages.add(processedMessage);
+					// Log the deserialized message
+					logger.debug("Deserialized message: {}", processedMessage);
+
+					receivedMessages.add(processedMessage);
+				} catch (Exception e) {
+					logger.error("Error processing message from RabbitMQ", e);
+				}
 			}
 		}
 		// Log the final list of messages

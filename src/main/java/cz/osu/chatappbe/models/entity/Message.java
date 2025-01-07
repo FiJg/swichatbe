@@ -1,5 +1,7 @@
 package cz.osu.chatappbe.models.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.*;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -9,7 +11,9 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Date;
 
+
 @Builder
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Entity
 @Getter
 @Setter
@@ -18,17 +22,14 @@ import java.util.Date;
 public class Message implements Serializable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	@Column(nullable = false)
 	private Integer id;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "chat_room_id", nullable = false)
-	@JsonBackReference // Prevent circular reference during serialization
 	private ChatRoom room;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "chat_user_id", nullable = false)
-	@JsonManagedReference // Ensure the user is serialized with the message
 	private ChatUser user;
 
 	@Column(nullable = false)

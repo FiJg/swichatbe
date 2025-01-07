@@ -23,11 +23,9 @@ public class ChatRoom implements Serializable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	@Column(nullable = false)
 	private Integer id;
 
 	@ManyToMany(mappedBy = "joinedChatRooms", fetch = FetchType.EAGER)
-	 // This side of the relationship gets serialized to break the circular dependency
 	private List<ChatUser> joinedUsers = new ArrayList<>();
 
 	@OneToMany(mappedBy = "room", cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.LAZY)
