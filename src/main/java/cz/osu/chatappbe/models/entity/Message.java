@@ -10,6 +10,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 @Builder
@@ -19,6 +20,7 @@ import java.util.Date;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonPropertyOrder({ "id", "user", "room", "content", "sendTime" })
 public class Message implements Serializable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -35,16 +37,22 @@ public class Message implements Serializable {
 	@Column(nullable = false)
 	private String content;
 
-	@Column(nullable = false)
+	@Column(nullable = true)
 	@Temporal(TemporalType.TIMESTAMP)
-	//private Instant sendTimeInstant;
 	private Date sendTime;
+
+	private String fileName; // Optional: Original file name
+
+	private String fileType;
+
+	@Temporal(TemporalType.TIMESTAMP)
+	private Instant sendTimeInstant;
 
 	public String toString() {
 		return "Message{" +
 		       "id=" + id +
 				", room=" + (room != null ? room.getId() : "null") +
-				", user=" + (user != null ? user.getId() : "null") +
+				", username=" + (user != null ? user.getUsername() : "null") +
 		       ", content='" + content + '\'' +
 		       ", sendTime=" + sendTime +
 		       '}';

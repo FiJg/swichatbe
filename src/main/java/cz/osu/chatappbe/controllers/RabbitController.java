@@ -28,6 +28,7 @@ public class RabbitController {
 		logger.info("Received request to fetch messages for user: {}", username);
 		List<Message> messages = this.messagingService.receive("queue-" + username);
 		logger.info("Fetched {} messages for user: {}", messages.size(), username);
+		messages.forEach(msg -> logger.info("Message: {}", msg));
 
 		return messages;
 	}

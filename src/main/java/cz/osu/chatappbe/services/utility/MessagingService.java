@@ -49,6 +49,8 @@ public class MessagingService {
 		Optional<ChatRoom> optionalRoom = chatRoomService.get(msg.getChatId());
 
 		if (optionalUser.isEmpty() || optionalRoom.isEmpty()) {
+			logger.warn("Either the user or chat room was not found for senderId: {} or chatId: {}",
+					msg.getSenderId(), msg.getChatId());
 			return null;
 		}
 
@@ -58,7 +60,8 @@ public class MessagingService {
 		Message message = messageService.create(user, room, msg.getContent(), msg.getDate());
 
 		room.getJoinedUsers().forEach(u -> {
-			this.send("queue-" + u.getUsername(), message);
+			String userQueueName = "queue-" + u.getUsername();
+			send(userQueueName, message);
 		});
 
 		return msg;
@@ -69,48 +72,39 @@ public class MessagingService {
 	}
 
 	public void send(String queueName, Message message) {
-		Map<String, Object> preparedMessage = messageService.prepareForRabbit(message);
+		Map<String, Object> preparedMessage = messageService.prepareForRabbitAsMap(message);
 
 		logger.info("Sending prepared message to queue {}: {}", queueName, preparedMessage);
 
-		// This should work now, because the Map contains only serializable data.
-		rabbitTemplate.convertAndSend(queueName, preparedMessage);
+		try {
+			rabbitTemplate.convertAndSend(queueName, preparedMessage);
+		} catch (Exception e) {
+			logger.error("Error sending message to queue {}: {}", queueName, e.getMessage(), e);
+		}
 	}
 
-
-	/**
-	 * Recieves queues
-	 * @param queueName
-	 * @return
-	 */
 	public List<Message> receive(String queueName) {
 		List<Message> receivedMessages = new ArrayList<>();
 
 		logger.info("Checking messages in queue: {}", queueName);
 
-		while (Objects.requireNonNull(admin.getQueueInfo(queueName)).getMessageCount() != 0) {
+		while (Objects.requireNonNull(admin.getQueueInfo(queueName)).getMessageCount() > 0) {
 			Object rawMessage = rabbitTemplate.receiveAndConvert(queueName);
 
-			// Log the raw message received from RabbitMQ
 			logger.debug("Raw message received from RabbitMQ: {}", rawMessage);
 
 			if (rawMessage != null) {
 				try {
-					// Deserialize and process the message
 					Message processedMessage = messageService.receiveFromRabbit(rawMessage);
-
 					logger.debug("Deserialized message: {}", processedMessage);
-
 					receivedMessages.add(processedMessage);
 				} catch (Exception e) {
-					logger.error("Error processing message from RabbitMQ", e);
+					logger.error("Error processing message from RabbitMQ: {}", e.getMessage(), e);
 				}
 			}
 		}
 
-		// Log the final list of processed messages
 		logger.info("Total messages received from queue {}: {}", queueName, receivedMessages.size());
-
 		return receivedMessages;
 	}
 }

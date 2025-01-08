@@ -2,21 +2,23 @@ package cz.osu.chatappbe.services.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cz.osu.chatappbe.controllers.RabbitController;
 import cz.osu.chatappbe.models.entity.ChatRoom;
 import cz.osu.chatappbe.models.entity.ChatUser;
 import cz.osu.chatappbe.models.entity.Message;
 import cz.osu.chatappbe.repositories.MessageRepository;
 import cz.osu.chatappbe.repositories.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class MessageService {
+
+	private static final Logger logger = LoggerFactory.getLogger(RabbitController.class);
 
 	// Jackson's ObjectMapper for JSON serialization and deserialization
 	private final ObjectMapper objectMapper = new ObjectMapper();
@@ -75,6 +77,7 @@ public class MessageService {
 				.messages(new ArrayList<>())
 				.joinedChatRooms(new ArrayList<>())
 				.build();
+		logger.debug("Creating message for user: {} in chatRoom: {}", user.getUsername(), chatRoom.getName());
 
 		// Return the new message with the minimal ChatRoom and ChatUser objects
 		return Message.builder()
@@ -102,25 +105,37 @@ public class MessageService {
 			throw new RuntimeException("Error serializing message for Rabbit", e);
 		}
 	}
+	public String prepareForRabbit(Message message) {
+		// Remove cyclic references
+		message.getRoom().setMessages(new ArrayList<>());
+		message.getRoom().setJoinedUsers(new ArrayList<>());
+		message.getUser().setMessages(new ArrayList<>());
+		message.getUser().setJoinedChatRooms(new ArrayList<>());
 
-	public Map<String, Object> prepareForRabbit(Message message) {
-		// Build a plain map
+		try {
+			return objectMapper.writeValueAsString(message);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("Error serializing message for Rabbit", e);
+		}
+	}
+
+	// Alternative: Prepare a message for RabbitMQ as a plain map
+	public Map<String, Object> prepareForRabbitAsMap(Message message) {
 		Map<String, Object> msgMap = new HashMap<>();
 		msgMap.put("id", message.getId());
 		msgMap.put("content", message.getContent());
 		msgMap.put("sendTime", message.getSendTime().getTime());
 
-		// Only store minimal info for user
 		if (message.getUser() != null) {
 			Map<String, Object> userMap = new HashMap<>();
 			userMap.put("id", message.getUser().getId());
+			System.out.println("!!!!!"+ message.getUser().getUsername());
 			userMap.put("username", message.getUser().getUsername());
 			msgMap.put("user", userMap);
 		} else {
 			msgMap.put("user", null);
 		}
 
-		// Only store minimal info for room
 		if (message.getRoom() != null) {
 			msgMap.put("roomId", message.getRoom().getId());
 		} else {
@@ -133,11 +148,81 @@ public class MessageService {
 
 
 	// Deserialize JSON to Message object using Jackson
+// Deserialize a message received from RabbitMQ
+	public Message receiveFromRabbitOld(Object rawMessage) {
+		try {
+			if (rawMessage instanceof String) {
+				return objectMapper.readValue((String) rawMessage, Message.class);
+			} else if (rawMessage instanceof Map) {
+				// Convert Map to Message manually
+				Map<String, Object> messageData = (Map<String, Object>) rawMessage;
+				Message message = new Message();
+				message.setId((Integer) messageData.get("id"));
+				message.setContent((String) messageData.get("content"));
+				message.setSendTime(new Date((Long) messageData.get("sendTime")));
+
+				// Resolve user
+				Map<String, Object> userMap = (Map<String, Object>) messageData.get("user");
+				if (userMap != null) {
+					ChatUser user = new ChatUser();
+					user.setId((Integer) userMap.get("id"));
+					user.setUsername((String) userMap.get("username"));
+					message.setUser(user);
+				}
+
+				// Resolve room
+				Integer roomId = (Integer) messageData.get("roomId");
+				if (roomId != null) {
+					ChatRoom room = new ChatRoom();
+					room.setId(roomId);
+					message.setRoom(room);
+				}
+
+				return message;
+			} else {
+				throw new IllegalArgumentException("Unsupported message format: " + rawMessage.getClass());
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Error deserializing message from Rabbit", e);
+		}
+	}
+
 	public Message receiveFromRabbit(Object message) {
 		try {
-			return objectMapper.readValue((String) message, Message.class);  // Deserialize JSON to Message
-		} catch (JsonProcessingException e) {
-			// Handle exception, e.g., log it or rethrow as a runtime exception
+			// Cast the received message to a Map
+			@SuppressWarnings("unchecked")
+			Map<String, Object> msgMap = (Map<String, Object>) message;
+
+			// Extract fields from the map
+			Message deserializedMessage = new Message();
+			deserializedMessage.setId((Integer) msgMap.get("id"));
+			deserializedMessage.setContent((String) msgMap.get("content"));
+
+			// Set the user
+			Map<String, Object> userMap = (Map<String, Object>) msgMap.get("user");
+			if (userMap != null) {
+				ChatUser user = new ChatUser();
+				user.setId((Integer) userMap.get("id"));
+				user.setUsername((String) userMap.get("username"));
+				deserializedMessage.setUser(user);
+			}
+
+			// Set the room ID
+			Integer roomId = (Integer) msgMap.get("roomId");
+			if (roomId != null) {
+				ChatRoom room = new ChatRoom();
+				room.setId(roomId);
+				deserializedMessage.setRoom(room);
+			}
+
+			// Set the send time
+			Long sendTime = (Long) msgMap.get("sendTime");
+			if (sendTime != null) {
+				deserializedMessage.setSendTime(new Date(sendTime));
+			}
+
+			return deserializedMessage;
+		} catch (Exception e) {
 			throw new RuntimeException("Error deserializing message from Rabbit", e);
 		}
 	}
