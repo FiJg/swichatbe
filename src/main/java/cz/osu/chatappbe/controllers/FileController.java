@@ -1,38 +1,40 @@
 package cz.osu.chatappbe.controllers;
 
+import cz.osu.chatappbe.models.entity.Message;
+import cz.osu.chatappbe.services.models.MessageService;
+import cz.osu.chatappbe.services.utility.FileStorageService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/files")
-@CrossOrigin
+@RequestMapping("/api/messages")
 public class FileController {
 
-    private static final String UPLOAD_DIR = "uploads/";
+    private final FileStorageService fileStorageService;
+    private final MessageService messageService;
+
+    public FileController(FileStorageService fileStorageService, MessageService messageService) {
+        this.fileStorageService = fileStorageService;
+        this.messageService = messageService;
+    }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file,
+                                        @RequestParam("messageId") Integer messageId) {
         try {
-            String fileName = file.getOriginalFilename();
-            Path filePath = Paths.get(UPLOAD_DIR + fileName);
-
-            // Save file to the server
-            Files.createDirectories(filePath.getParent());
-            Files.write(filePath, file.getBytes());
-
-            // Return the file URL
-            String fileUrl = "http://localhost:8082/" + UPLOAD_DIR + fileName;
-            return ResponseEntity.ok(fileUrl);
-
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading file");
+            String fileUrl = fileStorageService.saveFile(file);
+            Message updatedMessage = messageService.updateMessageWithFile(messageId, fileUrl,
+                    file.getOriginalFilename(), file.getContentType());
+            return ResponseEntity.ok(updatedMessage);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File upload failed");
         }
     }
 }
