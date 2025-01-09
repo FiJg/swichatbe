@@ -33,24 +33,39 @@ public class MessageService {
 	private ChatRoomService chatRoomService;
 
 	public Message create(ChatUser user, ChatRoom chatRoom, String content, String date) {
-		Calendar calendar = Calendar.getInstance();
-		calendar.setTimeInMillis(Long.parseLong(date));
-
-		return this.create(user, chatRoom, content, calendar);
+		//Calendar calendar = Calendar.getInstance();
+	//	calendar.setTimeInMillis(Long.parseLong(date));
+		Date parsedDate = parseDateFromString(date);
+		System.out.println("create method 1");
+		return this.create(user, chatRoom, content, parsedDate, null, null, null);
 	}
 
 	public Message create(ChatUser user, ChatRoom chatRoom, String content) {
-		return this.create(user, chatRoom, content, Calendar.getInstance());
+		System.out.println("create method 2");
+		return this.create(user, chatRoom, content, new Date(), null, null, null);
 	}
 
-	private Message create(ChatUser user, ChatRoom chatRoom, String content, Calendar date) {
+	private Message create(ChatUser user, ChatRoom chatRoom, String content, Date date, String fileUrl, String fileName, String fileType) {
+		System.out.println("create method 3");
 
 		// Create and save message
 		Message message = new Message();
 		message.setContent(content);
-		message.setSendTime(date.getTime());
+		message.setSendTime(date);
 		message.setRoom(chatRoom);
 		message.setUser(user);
+		if (user != null) {
+			message.setUsername(user.getUsername());
+		}
+		if (fileUrl != null) {
+			message.setFileUrl(fileUrl);
+		}
+		if (fileName != null) {
+			message.setFileName(fileName);
+		}
+		if (fileType != null) {
+			message.setFileType(fileType);
+		}
 		message = messageRepository.save(message);
 
 		// Add the message to the chatUser's and chatRoom's message collections
@@ -86,7 +101,9 @@ public class MessageService {
 				.sendTime(message.getSendTime())
 				.user(chatUser)
 				.room(chatRoom1)
+				.username(chatUser.getUsername())
 				.build();
+
 	}
 
 	// Serialize message to JSON using Jackson
@@ -129,7 +146,7 @@ public class MessageService {
 		if (message.getUser() != null) {
 			Map<String, Object> userMap = new HashMap<>();
 			userMap.put("id", message.getUser().getId());
-			System.out.println("!!!!!"+ message.getUser().getUsername());
+			System.out.println("!!!!! PrepareforRabbit username "+ message.getUser().getUsername());
 			userMap.put("username", message.getUser().getUsername());
 			msgMap.put("user", userMap);
 		} else {
@@ -141,6 +158,11 @@ public class MessageService {
 		} else {
 			msgMap.put("roomId", null);
 		}
+
+		msgMap.put("fileUrl", message.getFileUrl() != null ? message.getFileUrl() : "No File");
+		msgMap.put("fileName", message.getFileName() != null ? message.getFileName() : "No Name");
+		msgMap.put("fileType", message.getFileType() != null ? message.getFileType() : "No Type");
+		msgMap.put("username", message.getUsername() != null ? message.getUsername() : "No Username");
 
 		return msgMap;
 	}
@@ -186,6 +208,14 @@ public class MessageService {
 			throw new RuntimeException("Error deserializing message from Rabbit", e);
 		}
 	}
+	private Date parseDateFromString(String date) {
+		try {
+			long timestamp = Long.parseLong(date);
+			return new Date(timestamp);
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException("Invalid date format: " + date, e);
+		}
+	}
 
 	public Message receiveFromRabbit(Object message) {
 		try {
@@ -225,5 +255,9 @@ public class MessageService {
 		} catch (Exception e) {
 			throw new RuntimeException("Error deserializing message from Rabbit", e);
 		}
+
+
+
+
 	}
 }

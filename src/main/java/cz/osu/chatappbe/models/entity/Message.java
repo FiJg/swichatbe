@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonPropertyOrder({ "id", "user", "room", "content", "sendTime" })
+@JsonPropertyOrder({ "id", "user", "room", "content", "sendTime", "username" })
 public class Message implements Serializable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -41,12 +41,26 @@ public class Message implements Serializable {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date sendTime;
 
-	private String fileName; // Optional: Original file name
+	@Transient
+	private String username;
 
+
+	private String fileUrl;
+	private String fileName; // Optional: Original file name
 	private String fileType;
 
-	@Temporal(TemporalType.TIMESTAMP)
-	private Instant sendTimeInstant;
+	public String getUsername() {
+		if (user != null) {
+			return user.getUsername();
+		}
+		return this.username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	//private Instant sendTimeInstant;
 
 	public String toString() {
 		return "Message{" +
