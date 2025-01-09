@@ -26,6 +26,22 @@ public class MessageService {
 	@Autowired
 	private MessageRepository messageRepository;
 
+	public MessageService(MessageRepository messageRepository) {
+		this.messageRepository = messageRepository;
+	}
+
+	public Message updateMessageWithFile(Integer messageId, String fileUrl, String fileName, String fileType) {
+		Optional<Message> optionalMessage = messageRepository.findById(messageId);
+		if (optionalMessage.isEmpty()) {
+			throw new RuntimeException("Message not found");
+		}
+		Message message = optionalMessage.get();
+		message.setFileUrl(fileUrl);
+		message.setFileName(fileName);
+		message.setFileType(fileType);
+		return messageRepository.save(message);
+	}
+
 	@Autowired
 	private UserRepository userRepository;
 
