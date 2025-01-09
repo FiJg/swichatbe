@@ -131,6 +131,7 @@ public class MessageService {
 
 		try {
 			return objectMapper.writeValueAsString(message);
+
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException("Error serializing message for Rabbit", e);
 		}
@@ -146,7 +147,7 @@ public class MessageService {
 		if (message.getUser() != null) {
 			Map<String, Object> userMap = new HashMap<>();
 			userMap.put("id", message.getUser().getId());
-			System.out.println("!!!!! PrepareforRabbit username "+ message.getUser().getUsername());
+			System.out.println("!!!!! PrepareforRabbitAsaMap username "+ message.getUser().getUsername());
 			userMap.put("username", message.getUser().getUsername());
 			msgMap.put("user", userMap);
 		} else {

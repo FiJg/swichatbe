@@ -59,7 +59,7 @@ public class MessagingService {
 
 		Message message = messageService.create(user, room, msg.getContent(), msg.getDate());
 
-		room.getJoinedUsers().forEach(u -> {
+		room.getJoinedUsers().stream().distinct().forEach(u -> {
 			String userQueueName = "queue-" + u.getUsername();
 			send(userQueueName, message);
 		});
