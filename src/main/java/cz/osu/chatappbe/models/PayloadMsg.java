@@ -12,16 +12,21 @@ import java.time.Instant;
 public class PayloadMsg {
 	private Integer senderId;
 	private Integer chatId;
-	private String content;
+	private MessageContent content;
 	//private Instant dateInstant;
 	private String date;
 
-	/**
-	 * File support
-	 */
-//	private String fileType;
-//	private String fileUrl;
-//	private String fileName;
-//	private Long fileSize;
+	@Getter
+	@Setter
+	@NoArgsConstructor
+	@AllArgsConstructor
+	@ToString
+	public static class MessageContent {
+		private String content;
+		private String fileType;
+		private String fileUrl;
+		private String fileName;
+		private Long fileSize;
+	}
 
 }

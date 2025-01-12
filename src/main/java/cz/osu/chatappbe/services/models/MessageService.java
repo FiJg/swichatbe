@@ -3,6 +3,7 @@ package cz.osu.chatappbe.services.models;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.osu.chatappbe.controllers.RabbitController;
+import cz.osu.chatappbe.models.PayloadMsg;
 import cz.osu.chatappbe.models.entity.ChatRoom;
 import cz.osu.chatappbe.models.entity.ChatUser;
 import cz.osu.chatappbe.models.entity.Message;
@@ -48,12 +49,13 @@ public class MessageService {
 	@Autowired
 	private ChatRoomService chatRoomService;
 
-	public Message create(ChatUser user, ChatRoom chatRoom, String content, String date) {
+	public Message create(ChatUser user, ChatRoom chatRoom, PayloadMsg.MessageContent content, String date) {
 		//Calendar calendar = Calendar.getInstance();
 	//	calendar.setTimeInMillis(Long.parseLong(date));
 		Date parsedDate = parseDateFromString(date);
 		System.out.println("create method 1");
-		return this.create(user, chatRoom, content, parsedDate, null, null, null);
+		return this.create(user, chatRoom, content.getContent(), parsedDate, content.getFileUrl(), content.getFileName(), content.getFileType());
+
 	}
 
 	public Message create(ChatUser user, ChatRoom chatRoom, String content) {
