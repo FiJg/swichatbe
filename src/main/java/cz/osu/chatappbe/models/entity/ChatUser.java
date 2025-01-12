@@ -6,7 +6,9 @@ import lombok.*;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Builder
 @Entity
@@ -33,6 +35,8 @@ public class ChatUser implements Serializable {
 
 	@Column(nullable = false, unique = true)
 	private String username;
+
+	private Map<ChatRoom, Integer> unreadMessages = new HashMap<>();
 
 	@JsonIgnore
 	@Column(nullable = false)

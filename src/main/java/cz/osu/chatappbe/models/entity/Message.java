@@ -44,6 +44,11 @@ public class Message implements Serializable {
 	@Transient
 	private String username;
 
+	@Column(nullable = false)
+	private Instant addedToQueueTimestamp;
+
+	@Column(nullable = true)
+	private Instant retrievedFromQueueTimestamp;
 
 	private String fileUrl;
 	private String fileName; // Optional: Original file name
