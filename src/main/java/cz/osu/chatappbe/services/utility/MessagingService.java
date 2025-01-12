@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import java.time.Instant;
 import java.util.*;
 
 import static cz.osu.chatappbe.config.RabbitMQConfig.queueName;
@@ -72,6 +73,8 @@ public class MessagingService {
 	}
 
 	public void send(String queueName, Message message) {
+		message.setAddedToQueueTimestamp(Instant.now());
+
 		Map<String, Object> preparedMessage = messageService.prepareForRabbitAsMap(message);
 
 		logger.info("Sending prepared message to queue {}: {}", queueName, preparedMessage);
@@ -96,6 +99,9 @@ public class MessagingService {
 			if (rawMessage != null) {
 				try {
 					Message processedMessage = messageService.receiveFromRabbit(rawMessage);
+					// Set the timestamp when the message is retrieved from the queue
+					processedMessage.setRetrievedFromQueueTimestamp(Instant.now());
+
 					logger.debug("Deserialized message: {}", processedMessage);
 					receivedMessages.add(processedMessage);
 				} catch (Exception e) {

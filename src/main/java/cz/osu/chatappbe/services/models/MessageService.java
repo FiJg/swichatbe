@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -72,6 +73,9 @@ public class MessageService {
 		message.setSendTime(date);
 		message.setRoom(chatRoom);
 		message.setUser(user);
+		message.setAddedToQueueTimestamp(Instant.now());
+
+
 		if (user != null) {
 			message.setUsername(user.getUsername());
 		}
@@ -117,6 +121,7 @@ public class MessageService {
 				.id(message.getId())
 				.content(message.getContent())
 				.sendTime(message.getSendTime())
+				.addedToQueueTimestamp(message.getAddedToQueueTimestamp())
 				.user(chatUser)
 				.room(chatRoom1)
 				.username(chatUser.getUsername())
@@ -269,6 +274,9 @@ public class MessageService {
 			if (sendTime != null) {
 				deserializedMessage.setSendTime(new Date(sendTime));
 			}
+
+			// Set the retrievedFromQueueTimestamp
+			deserializedMessage.setRetrievedFromQueueTimestamp(Instant.now());
 
 			return deserializedMessage;
 		} catch (Exception e) {
