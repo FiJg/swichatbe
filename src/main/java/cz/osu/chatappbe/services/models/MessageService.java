@@ -20,7 +20,7 @@ import java.util.*;
 @Service
 public class MessageService {
 
-	private static final Logger logger = LoggerFactory.getLogger(RabbitController.class);
+	private static final Logger logger = LoggerFactory.getLogger(MessageService.class);
 
 	// Jackson's ObjectMapper for JSON serialization and deserialization
 	private final ObjectMapper objectMapper = new ObjectMapper();
@@ -286,5 +286,9 @@ public class MessageService {
 
 
 
+	}
+
+	public Message save(Message message) {
+		return messageRepository.save(message);
 	}
 }

@@ -86,6 +86,11 @@ public class MessagingService {
 		}
 	}
 
+	/**
+	 *
+	 * @param queueName
+	 * @return
+	 */
 	public List<Message> receive(String queueName) {
 		List<Message> receivedMessages = new ArrayList<>();
 
@@ -101,6 +106,8 @@ public class MessagingService {
 					Message processedMessage = messageService.receiveFromRabbit(rawMessage);
 					// Set the timestamp when the message is retrieved from the queue
 					processedMessage.setRetrievedFromQueueTimestamp(Instant.now());
+
+					messageService.save(processedMessage);
 
 					logger.debug("Deserialized message: {}", processedMessage);
 					receivedMessages.add(processedMessage);

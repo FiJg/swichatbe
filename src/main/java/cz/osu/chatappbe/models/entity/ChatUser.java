@@ -36,11 +36,14 @@ public class ChatUser implements Serializable {
 	@Column(nullable = false, unique = true)
 	private String username;
 
-	private Map<ChatRoom, Integer> unreadMessages = new HashMap<>();
+	//private Map<ChatRoom, Integer> unreadMessages = new HashMap<>();
 
 	@JsonIgnore
 	@Column(nullable = false)
 	private String password;
+
+	@Column(nullable = true)
+	private String avatarUrl;
 
 	public ChatUser(ChatUser chatUser) {
 		this.id = chatUser.getId();
@@ -48,6 +51,7 @@ public class ChatUser implements Serializable {
 		this.messages = new ArrayList<>(chatUser.getMessages());
 		this.username = chatUser.getUsername();
 		this.password = chatUser.getPassword();
+		this.avatarUrl = chatUser.getAvatarUrl();
 	}
 
 	public void addChatRoom(ChatRoom chatRoom) {
@@ -76,11 +80,14 @@ public class ChatUser implements Serializable {
 		message.setUser(this);
 	}
 
+
+
 	public String toString() {
 		return "ChatUser{" +
 		       "id=" + id +
 		       ", username='" + username + '\'' +
 		       ", password='" + password + '\'' +
+				", avatarUrl='" + avatarUrl + '\'' +
 		       '}';
 	}
 

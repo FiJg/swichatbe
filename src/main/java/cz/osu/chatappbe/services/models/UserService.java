@@ -20,6 +20,7 @@ public class UserService {
 	@Autowired
 	private HashService hashService;
 
+
 	public ChatUser create(SignupForm signupForm) {
 		System.out.println("UserService: creating new user");
 		ChatUser user = new ChatUser();
@@ -91,4 +92,10 @@ public class UserService {
 	}
 
 
+	public void updateAvatarUrl(String username, String avatarUrl) {
+		ChatUser user = repository.findUserByUsernameIgnoreCase(username)
+				.orElseThrow(() -> new RuntimeException("User not found"));
+		user.setAvatarUrl(avatarUrl);
+		repository.save(user);
+	}
 }
