@@ -10,11 +10,15 @@ import cz.osu.chatappbe.services.models.UserService;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 
 import java.time.Instant;
@@ -72,8 +76,12 @@ public class MessagingService {
 		return this.receiveMessage(msg);
 	}
 
+	@Autowired
+	private SimpMessagingTemplate messagingTemplate;
+
 	public void send(String queueName, Message message) {
 		message.setAddedToQueueTimestamp(Instant.now());
+		messageService.save(message);
 
 		Map<String, Object> preparedMessage = messageService.prepareForRabbitAsMap(message);
 
@@ -81,10 +89,26 @@ public class MessagingService {
 
 		try {
 			rabbitTemplate.convertAndSend(queueName, preparedMessage);
+			notifyChatRoomMembers(message);
 		} catch (Exception e) {
 			logger.error("Error sending message to queue {}: {}", queueName, e.getMessage(), e);
 		}
 	}
+
+	private void notifyChatRoomMembers(Message message) {
+		ChatRoom chatRoom = message.getRoom();
+		chatRoom.getJoinedUsers().forEach(user -> {
+			String destination = "/user/" + user.getUsername() + "/notifications";
+			messagingTemplate.convertAndSend(destination,
+					Map.of(
+							"chatRoomId", chatRoom.getId(),
+							"chatRoomName", chatRoom.getName(),
+							"newMessage", message.getContent()
+					)
+			);
+		});
+	}
+
 
 	/**
 	 *
@@ -108,7 +132,6 @@ public class MessagingService {
 					Message processedMessage = messageService.receiveFromRabbit(rawMessage);
 					// Set the timestamp when the message is retrieved from the queue
 					processedMessage.setRetrievedFromQueueTimestamp(Instant.now());
-
 					messageService.save(processedMessage);
 
 					logger.debug("Deserialized message: {}", processedMessage);

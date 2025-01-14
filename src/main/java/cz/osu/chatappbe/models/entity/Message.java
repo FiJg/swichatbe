@@ -12,6 +12,8 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import javax.persistence.*;
+import java.time.ZonedDateTime;
 
 
 @Builder
@@ -71,7 +73,14 @@ public class Message implements Serializable {
 		this.username = username;
 	}
 
-	//private Instant sendTimeInstant;
+
+	@Column(nullable = true)
+	private ZonedDateTime sentToQueueAt;
+
+	@Column(nullable = true)
+	private ZonedDateTime retrievedFromQueueAt;
+
+
 
 	public String toString() {
 		return "Message{" +
@@ -80,6 +89,8 @@ public class Message implements Serializable {
 				", username=" + (user != null ? user.getUsername() : "null") +
 		       ", content='" + content + '\'' +
 		       ", sendTime=" + sendTime +
+				", addedToQueueTimestamp=" + addedToQueueTimestamp +
+				", retrievedFromQueueTimestamp=" + retrievedFromQueueTimestamp +
 		       '}';
 	}
 }
