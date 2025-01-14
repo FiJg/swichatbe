@@ -101,6 +101,8 @@ public class MessagingService {
 
 			logger.debug("Raw message received from RabbitMQ: {}", rawMessage);
 
+
+
 			if (rawMessage != null) {
 				try {
 					Message processedMessage = messageService.receiveFromRabbit(rawMessage);

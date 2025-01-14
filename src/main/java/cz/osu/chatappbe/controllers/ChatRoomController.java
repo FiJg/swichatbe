@@ -97,12 +97,13 @@ public class ChatRoomController {
 
 		// Checking whether the ChatRoom exists
 		Optional<ChatRoom> chatRoom = this.chatRoomService.get(id);
+
 		System.out.println("chatroom" + chatRoom.toString() );
 		if (chatRoom.isEmpty()) {
 			return new ResponseEntity<>("Chatroom " + id + " does not exist.", HttpStatus.BAD_REQUEST);
 		}
 
-		// Check if ChatUser exists
+		// Check if ChatUser exists (user being added)
 		Optional<ChatUser> chatUser = userService.get(addChatForm.getUserName());
 
 		System.out.println("string username:" + addChatForm.getUserName());
@@ -120,7 +121,14 @@ public class ChatRoomController {
 */
 
 		ChatUser chatroomOwner = chatRoomService.getOwner(chatRoom.get());
-		if (!chatroomOwner.equals(chatUser.get())) {
+
+		if (chatroomOwner == null) {
+			return new ResponseEntity<>("Chatroom owner not found. Unable to add users.", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		// Check if the requesting user is the owner
+		Optional<ChatUser> requestingUser = userService.get(addChatForm.getReqUserId());
+		if (requestingUser.isEmpty() || !chatroomOwner.equals(requestingUser.get())) {
 			return new ResponseEntity<>("User needs to be the owner of the room to add other users.", HttpStatus.BAD_REQUEST);
 		}
 

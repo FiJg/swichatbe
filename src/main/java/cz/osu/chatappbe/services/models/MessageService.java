@@ -275,6 +275,13 @@ public class MessageService {
 				deserializedMessage.setSendTime(new Date(sendTime));
 			}
 
+			if (deserializedMessage.getAddedToQueueTimestamp() == null) {
+				deserializedMessage.setAddedToQueueTimestamp(Instant.now());
+			}
+
+			logger.debug("AddedToQueueTimestamp: {}", deserializedMessage.getAddedToQueueTimestamp());
+
+
 			// Set the retrievedFromQueueTimestamp
 			deserializedMessage.setRetrievedFromQueueTimestamp(Instant.now());
 

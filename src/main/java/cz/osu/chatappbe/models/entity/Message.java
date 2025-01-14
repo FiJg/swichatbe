@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import javax.persistence.*;
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -46,7 +47,12 @@ public class Message implements Serializable {
 
 	@Column(nullable = false)
 	private Instant addedToQueueTimestamp;
-
+	@PrePersist
+	public void prePersist() {
+		if (addedToQueueTimestamp == null) {
+			addedToQueueTimestamp = Instant.now();
+		}
+	}
 	@Column(nullable = true)
 	private Instant retrievedFromQueueTimestamp;
 
