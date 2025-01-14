@@ -146,7 +146,7 @@ public class ChatRoomController {
 	 * @param addChatForm
 	 * @return
 	 */
-	@PostMapping("/delete/{id}")
+	@PostMapping("/deleteUserFromChatroom/{id}")
 	public ResponseEntity<Object> removeUserFromChatRoom(@PathVariable Integer id, @RequestBody AddChatForm addChatForm) {
 
 		// Check if ChatRoom exists
@@ -156,24 +156,43 @@ public class ChatRoomController {
 			return new ResponseEntity<>("Chatroom " + id + " does not exist.", HttpStatus.BAD_REQUEST);
 		}
 
+		// Prevent removal from public rooms
+		if (chatRoom.get().getIsPublic()) {
+			return new ResponseEntity<>("Users cannot be removed from public chatrooms.", HttpStatus.FORBIDDEN);
+		}
+
 		// Check if ChatUser exists
 		Optional<ChatUser> chatUser = userService.get(addChatForm.getUserName());
 		System.out.println("string username:" + addChatForm.getUserName());
-
 		System.out.println("chatUserFromName"+ chatUser.toString());
 		if (chatUser.isEmpty()) {
 			return new ResponseEntity<>("User " + addChatForm.getUserName() + " does not exist.", HttpStatus.BAD_REQUEST);
 		}
 
+
+		// Get the chatroom owner
+		ChatUser chatroomOwner = chatRoomService.getOwner(chatRoom.get());
+		if (chatroomOwner == null) {
+			return new ResponseEntity<>("Chatroom owner not found. Unable to remove users.", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
 		// Check if the user is the owner of the chat room.
 		//int chatroomOwner = chatRoomService.getOwner(chatRoom.get());
-		ChatUser chatroomOwner = chatRoomService.getOwner(chatRoom.get());
-		if (!chatroomOwner.equals(chatUser.get())) {
-			return new ResponseEntity<>("User needs to be the owner of the room to remove other users.", HttpStatus.BAD_REQUEST);
+		// Check if the requesting user is the owner
+		Optional<ChatUser> requestingUser = userService.get(addChatForm.getReqUserId());
+		if (requestingUser.isEmpty() || !chatroomOwner.equals(requestingUser.get())) {
+			return new ResponseEntity<>("Only the chatroom owner can remove users.", HttpStatus.BAD_REQUEST);
 		}
+
+
 		//if (chatroomOwner!= addChatForm.getReqUserId()  ) {
 		//	return new ResponseEntity<>("User needs to be the owner of the room to remove other users.", HttpStatus.BAD_REQUEST);
 	 //	}
+
+		// Prevent the owner from removing themselves
+		if (chatroomOwner.getUsername().equals(addChatForm.getUserName())) {
+			return new ResponseEntity<>("The owner cannot remove themselves from the chatroom.", HttpStatus.BAD_REQUEST);
+		}
 
 
 
@@ -181,6 +200,7 @@ public class ChatRoomController {
 		this.userService.removeRoom(chatUser.get(), chatRoom.get());
 
 		System.out.println("deleted from room, returning");
+
 		return new ResponseEntity<>(this.chatRoomService.prepareRoomForFrontEnd(chatRoom.get()), HttpStatus.OK);
 	}
 }
