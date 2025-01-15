@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatRoomService {
@@ -17,6 +18,10 @@ public class ChatRoomService {
 	private ChatRoomRepository repository;
 	@Autowired
 	private UserRepository userRepository;
+
+	public Optional<ChatRoom> findByIdWithUsers(Integer id) {
+		return repository.findByIdWithJoinedUsers(id);
+	}
 
 	public ChatRoom create(ChatUser user, ChatUser chatUser) {
 		ChatRoom chatRoom = new ChatRoom();
@@ -90,6 +95,7 @@ public class ChatRoomService {
 		ChatRoom tmpChatRoom1 = chatRoom;
 		users.forEach(user -> {
 			user.getJoinedChatRooms().add(tmpChatRoom1);
+			tmpChatRoom1.getJoinedUsers().add(user);
 			userRepository.save(user);  // Make sure the user is persisted
 		});
 
@@ -149,6 +155,13 @@ public class ChatRoomService {
 			message.getUser().setMessages(new ArrayList<>());
 			message.getUser().setJoinedChatRooms(new ArrayList<>());
 		});
+		List<Integer> userIds = room.getJoinedUsers().stream()
+				.map(ChatUser::getId) // Assuming ChatUser has a method getId()
+				.collect(Collectors.toList());
+
+		List<ChatUser> freshJoined = userRepository.findAllById(userIds);
+		System.out.println(freshJoined.stream().toArray().toString());
+		room.setJoinedUsers(freshJoined);
 
 		return room;
 	}

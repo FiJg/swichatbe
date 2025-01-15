@@ -7,6 +7,7 @@ import cz.osu.chatappbe.models.PayloadMsg;
 import cz.osu.chatappbe.services.models.ChatRoomService;
 import cz.osu.chatappbe.services.models.MessageService;
 import cz.osu.chatappbe.services.models.UserService;
+import org.apache.catalina.User;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import java.time.ZonedDateTime;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static cz.osu.chatappbe.config.RabbitMQConfig.queueName;
 
@@ -89,6 +91,7 @@ public class MessagingService {
 
 		try {
 			rabbitTemplate.convertAndSend(queueName, preparedMessage);
+
 			notifyChatRoomMembers(message);
 		} catch (Exception e) {
 			logger.error("Error sending message to queue {}: {}", queueName, e.getMessage(), e);
@@ -96,21 +99,39 @@ public class MessagingService {
 	}
 
 	private void notifyChatRoomMembers(Message message) {
-		ChatRoom chatRoom = message.getRoom();
+		// 1) Force re-fetch the real ChatRoom from DB, with joinedUsers
+		ChatRoom reloadedRoom = chatRoomService.findByIdWithUsers(message.getRoom().getId())
+				.orElseThrow(() -> new RuntimeException("ChatRoom not found"));
 
-		logger.info("Notifying chatroom {} with message {}", chatRoom.getName(), message.getContent());
+		logger.info("81a. Notifying chatroom {} with message {}",
+				reloadedRoom.getName(), message.getContent());
+		logger.info("81b. ChatRoom: {} (ID: {})",
+				reloadedRoom.getName(), reloadedRoom.getId());
 
-		logger.info("Message Content: {}", message.getContent());
-		logger.info("ChatRoom: {} (ID: {})", chatRoom.getName(), chatRoom.getId());
+		List<ChatUser> joinedUsers = reloadedRoom.getJoinedUsers();
+		int userCount = joinedUsers.size();
+		logger.info("81f. Number of joined users to notify: {}", userCount);
 
-		chatRoom.getJoinedUsers().forEach(user -> {
+		if (userCount > 0) {
+			String usernames = joinedUsers.stream()
+					.map(ChatUser::getUsername)
+					.collect(Collectors.joining(", "));
+			logger.info("81g. Users to be notified: {}", usernames);
+		} else {
+			logger.warn("81g. No users are currently joined in the chatroom '{}'.",
+					reloadedRoom.getName());
+		}
+
+		// 2) Now loop over the re-fetched joinedUsers
+		reloadedRoom.getJoinedUsers().forEach(user -> {
 			String destination = "/user/" + user.getUsername() + "/notifications";
-			logger.info("Notifying user: {}", user.getUsername());
-			logger.info("Sending notification to destination: {}", destination);
+			logger.info("81d. Notifying user: {}", user.getUsername());
+			logger.info("81e. Sending notification to destination: {}", destination);
+
 			messagingTemplate.convertAndSend(destination,
 					Map.of(
-							"chatRoomId", chatRoom.getId(),
-							"chatRoomName", chatRoom.getName(),
+							"chatRoomId", reloadedRoom.getId(),
+							"chatRoomName", reloadedRoom.getName(),
 							"newMessage", message.getContent()
 					)
 			);

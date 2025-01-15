@@ -1,10 +1,7 @@
 package cz.osu.chatappbe.models.entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.*;
 
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.*;
 
 import javax.persistence.*;
@@ -26,6 +23,7 @@ public class ChatRoom implements Serializable {
 	private Integer id;
 
 	@ManyToMany(mappedBy = "joinedChatRooms", fetch = FetchType.EAGER)
+	@JsonIgnore
 	private List<ChatUser> joinedUsers = new ArrayList<>();
 
 	@OneToMany(mappedBy = "room", cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.LAZY)

@@ -13,7 +13,6 @@ public class PayloadMsg {
 	private Integer senderId;
 	private Integer chatId;
 	private MessageContent content;
-	//private Instant dateInstant;
 	private String date;
 
 	@Getter
