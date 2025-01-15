@@ -74,14 +74,6 @@ public class Message implements Serializable {
 	}
 
 
-	@Column(nullable = true)
-	private ZonedDateTime sentToQueueAt;
-
-	@Column(nullable = true)
-	private ZonedDateTime retrievedFromQueueAt;
-
-
-
 	public String toString() {
 		return "Message{" +
 		       "id=" + id +
