@@ -97,8 +97,16 @@ public class MessagingService {
 
 	private void notifyChatRoomMembers(Message message) {
 		ChatRoom chatRoom = message.getRoom();
+
+		logger.info("Notifying chatroom {} with message {}", chatRoom.getName(), message.getContent());
+
+		logger.info("Message Content: {}", message.getContent());
+		logger.info("ChatRoom: {} (ID: {})", chatRoom.getName(), chatRoom.getId());
+
 		chatRoom.getJoinedUsers().forEach(user -> {
 			String destination = "/user/" + user.getUsername() + "/notifications";
+			logger.info("Notifying user: {}", user.getUsername());
+			logger.info("Sending notification to destination: {}", destination);
 			messagingTemplate.convertAndSend(destination,
 					Map.of(
 							"chatRoomId", chatRoom.getId(),

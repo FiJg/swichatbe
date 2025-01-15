@@ -50,44 +50,71 @@ public class MessageService {
 	@Autowired
 	private ChatRoomService chatRoomService;
 
+
+	/**
+	 *  For messages that have file content
+	 * @param user
+	 * @param chatRoom
+	 * @param content
+	 * @param date
+	 * @return
+	 */
 	public Message create(ChatUser user, ChatRoom chatRoom, PayloadMsg.MessageContent content, String date) {
 		//Calendar calendar = Calendar.getInstance();
 	//	calendar.setTimeInMillis(Long.parseLong(date));
 		Date parsedDate = parseDateFromString(date);
 		System.out.println("create method 1");
-		return this.create(user, chatRoom, content.getContent(), parsedDate, content.getFileUrl(), content.getFileName(), content.getFileType());
-
+		return this.create(user, chatRoom, content, parsedDate);
 	}
 
+	/**
+	 * For text-only messages
+	 * @param user
+	 * @param chatRoom
+	 * @param content
+	 * @return
+	 */
 	public Message create(ChatUser user, ChatRoom chatRoom, String content) {
 		System.out.println("create method 2");
-		return this.create(user, chatRoom, content, new Date(), null, null, null);
+		// If no file info is available, pass a "blank" MessageContent or handle differently
+		PayloadMsg.MessageContent msgContent = new PayloadMsg.MessageContent();
+		msgContent.setContent(content);
+		// Or just build a text-only version
+		return this.create(user, chatRoom, msgContent, new Date());
 	}
 
-	private Message create(ChatUser user, ChatRoom chatRoom, String content, Date date, String fileUrl, String fileName, String fileType) {
+	/**
+	 *    The private method that does the actual creation & saving.
+	 *       It takes the full MessageContent so we can set fileUrl, fileName, fileType.
+	 * @param user
+	 * @param chatRoom
+	 * @param content
+	 * @param date
+	 * @return
+	 */
+
+
+	private Message create(ChatUser user, ChatRoom chatRoom, PayloadMsg.MessageContent content, Date date) {
 		System.out.println("create method 3");
 
 		// Create and save message
 		Message message = new Message();
-		message.setContent(content);
+
 		message.setSendTime(date);
 		message.setRoom(chatRoom);
 		message.setUser(user);
+
 		message.setAddedToQueueTimestamp(Instant.now());
 
+		// Set text content
+		message.setContent(content.getContent());
 
-		if (user != null) {
-			message.setUsername(user.getUsername());
-		}
-		if (fileUrl != null) {
-			message.setFileUrl(fileUrl);
-		}
-		if (fileName != null) {
-			message.setFileName(fileName);
-		}
-		if (fileType != null) {
-			message.setFileType(fileType);
-		}
+		// Set file fields
+		message.setFileUrl(content.getFileUrl());
+		message.setFileName(content.getFileName());
+		message.setFileType(content.getFileType());
+
+		//Save to DB
 		message = messageRepository.save(message);
 
 		// Add the message to the chatUser's and chatRoom's message collections
@@ -117,16 +144,35 @@ public class MessageService {
 		logger.debug("Creating message for user: {} in chatRoom: {}", user.getUsername(), chatRoom.getName());
 
 		// Return the new message with the minimal ChatRoom and ChatUser objects
-		return Message.builder()
+		// Optionally return a "trimmed" Message to avoid circular references
+		Message returnedMessage = Message.builder()
 				.id(message.getId())
 				.content(message.getContent())
 				.sendTime(message.getSendTime())
 				.addedToQueueTimestamp(message.getAddedToQueueTimestamp())
-				.user(chatUser)
-				.room(chatRoom1)
-				.username(chatUser.getUsername())
+				.retrievedFromQueueTimestamp(message.getRetrievedFromQueueTimestamp())
+				.fileUrl(message.getFileUrl())
+				.fileName(message.getFileName())
+				.fileType(message.getFileType())
+				.room(ChatRoom.builder()
+						.id(chatRoom.getId())
+						.isGroup(chatRoom.getIsGroup())
+						.isPublic(chatRoom.getIsPublic())
+						.name(chatRoom.getName())
+						.joinedUsers(new ArrayList<>()) // empty
+						.owner(chatRoom.getOwner())
+						.build()
+				)
+				.user(ChatUser.builder()
+						.id(user.getId())
+						.username(user.getUsername())
+						.messages(new ArrayList<>()) // empty
+						.joinedChatRooms(new ArrayList<>()) // empty
+						.build()
+				)
+				.username(user.getUsername())
 				.build();
-
+		return returnedMessage;
 	}
 
 	// Serialize message to JSON using Jackson
@@ -200,12 +246,12 @@ public class MessageService {
 			if (rawMessage instanceof String) {
 				return objectMapper.readValue((String) rawMessage, Message.class);
 			} else if (rawMessage instanceof Map) {
+
 				// Convert Map to Message manually
 				Map<String, Object> messageData = (Map<String, Object>) rawMessage;
-				Message message = new Message();
-				message.setId((Integer) messageData.get("id"));
-				message.setContent((String) messageData.get("content"));
-				message.setSendTime(new Date((Long) messageData.get("sendTime")));
+				Message deserializedMessage = new Message();
+				deserializedMessage.setId((Integer) messageData.get("id"));
+				deserializedMessage.setContent((String) messageData.get("content"));
 
 				// Resolve user
 				Map<String, Object> userMap = (Map<String, Object>) messageData.get("user");
@@ -213,18 +259,45 @@ public class MessageService {
 					ChatUser user = new ChatUser();
 					user.setId((Integer) userMap.get("id"));
 					user.setUsername((String) userMap.get("username"));
-					message.setUser(user);
+					deserializedMessage.setUser(user);
 				}
 
-				// Resolve room
+				// Resolve chatroom
 				Integer roomId = (Integer) messageData.get("roomId");
 				if (roomId != null) {
 					ChatRoom room = new ChatRoom();
 					room.setId(roomId);
-					message.setRoom(room);
+					deserializedMessage.setRoom(room);
 				}
 
-				return message;
+				//  Re-set the sendTime
+				Long sendTime = (Long) messageData.get("sendTime");
+				if (sendTime != null) {
+					deserializedMessage.setSendTime(new Date(sendTime));
+				}
+				if (deserializedMessage.getAddedToQueueTimestamp() == null) {
+					deserializedMessage.setAddedToQueueTimestamp(Instant.now());
+				}
+				deserializedMessage.setRetrievedFromQueueTimestamp(Instant.now());
+
+				// Re-set the file fields
+				String fileUrl = (String) messageData.get("fileUrl");
+				if (fileUrl != null && !fileUrl.equals("No File")) {
+					deserializedMessage.setFileUrl(fileUrl);
+				}
+
+				String fileName = (String) messageData.get("fileName");
+				if (fileName != null && !fileName.equals("No Name")) {
+					deserializedMessage.setFileName(fileName);
+				}
+
+				String fileType = (String) messageData.get("fileType");
+				if (fileType != null && !fileType.equals("No Type")) {
+					deserializedMessage.setFileType(fileType);
+				}
+
+
+				return deserializedMessage;
 			} else {
 				throw new IllegalArgumentException("Unsupported message format: " + rawMessage.getClass());
 			}
@@ -280,6 +353,23 @@ public class MessageService {
 			}
 
 			logger.debug("AddedToQueueTimestamp: {}", deserializedMessage.getAddedToQueueTimestamp());
+
+			// ALSO do:
+			String fileUrl = (String) msgMap.get("fileUrl");
+			if (fileUrl != null && !fileUrl.equals("No File")) {
+				deserializedMessage.setFileUrl(fileUrl);
+			}
+
+			String fileName = (String) msgMap.get("fileName");
+			if (fileName != null && !fileName.equals("No Name")) {
+				deserializedMessage.setFileName(fileName);
+			}
+
+			String fileType = (String) msgMap.get("fileType");
+			if (fileType != null && !fileType.equals("No Type")) {
+				deserializedMessage.setFileType(fileType);
+			}
+
 
 
 			// Set the retrievedFromQueueTimestamp

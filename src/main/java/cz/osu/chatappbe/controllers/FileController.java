@@ -3,6 +3,9 @@ package cz.osu.chatappbe.controllers;
 import cz.osu.chatappbe.models.entity.Message;
 import cz.osu.chatappbe.services.models.MessageService;
 import cz.osu.chatappbe.services.utility.FileStorageService;
+import cz.osu.chatappbe.services.utility.MessagingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,12 +33,15 @@ public class FileController {
     private final FileStorageService fileStorageService;
     private final String UPLOAD_DIR = "uploads";
 
+    private static final Logger logger = LoggerFactory.getLogger(FileController.class);
+
     public FileController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
     }
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
+
         try {
             String fileUrl = fileStorageService.saveFile(file); // Save file and get URL
             Map<String, String> response = new HashMap<>();
