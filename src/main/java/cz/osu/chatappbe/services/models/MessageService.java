@@ -320,6 +320,13 @@ public class MessageService {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> msgMap = (Map<String, Object>) message;
 
+
+			String messageType = (String) msgMap.get("messageType");
+			if ("notification".equals(messageType)) {
+				logger.info("Received a notification message. Skipping processing to prevent loop.");
+				return null; // Skip processing
+			}
+
 			// Extract fields from the map
 			Message deserializedMessage = new Message();
 			deserializedMessage.setId((Integer) msgMap.get("id"));

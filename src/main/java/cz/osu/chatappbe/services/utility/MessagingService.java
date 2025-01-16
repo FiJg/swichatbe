@@ -42,6 +42,9 @@ public class MessagingService {
 	private UserService userService;
 	@Autowired
 	private ChatRoomService chatRoomService;
+	@Autowired
+	private SimpMessagingTemplate messagingTemplate;
+
 
 	public PayloadMsg receivePublicMessage(PayloadMsg msg) {
 		return this.receiveMessage(msg);
@@ -68,7 +71,7 @@ public class MessagingService {
 
 		room.getJoinedUsers().stream().distinct().forEach(u -> {
 			String userQueueName = "queue-" + u.getUsername();
-			send(userQueueName, message);
+			send(userQueueName, message, "chat"); // Specify messageType as "chat"
 		});
 
 		return msg;
@@ -78,21 +81,21 @@ public class MessagingService {
 		return this.receiveMessage(msg);
 	}
 
-	@Autowired
-	private SimpMessagingTemplate messagingTemplate;
 
-	public void send(String queueName, Message message) {
+	public void send(String queueName, Message message, String messageType) {
 		message.setAddedToQueueTimestamp(Instant.now());
-		messageService.save(message);
+		//messageService.save(message);
 
 		Map<String, Object> preparedMessage = messageService.prepareForRabbitAsMap(message);
+		preparedMessage.put("messageType", messageType);
 
 		logger.info("Sending prepared message to queue {}: {}", queueName, preparedMessage);
 
 		try {
 			rabbitTemplate.convertAndSend(queueName, preparedMessage);
-
-			notifyChatRoomMembers(message);
+			if ("chat".equals(messageType)) {
+				notifyChatRoomMembers(message);
+			}
 		} catch (Exception e) {
 			logger.error("Error sending message to queue {}: {}", queueName, e.getMessage(), e);
 		}
@@ -153,8 +156,6 @@ public class MessagingService {
 			Object rawMessage = rabbitTemplate.receiveAndConvert(queueName);
 
 			logger.debug("Raw message received from RabbitMQ: {}", rawMessage);
-
-
 
 			if (rawMessage != null) {
 				try {

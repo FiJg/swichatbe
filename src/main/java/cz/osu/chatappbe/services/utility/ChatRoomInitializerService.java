@@ -27,7 +27,7 @@ public class ChatRoomInitializerService {
         if (existingRoom.isEmpty()) {
             // Create a new public room
             ChatRoom chatRoom = new ChatRoom();
-            chatRoom.setName("Public2");
+            chatRoom.setName("Main Chat");
             chatRoom.setIsPublic(true);
             chatRoom.setIsGroup(false);
             chatRoom.setOwner(null);  // Public rooms may not have an owner
