@@ -56,11 +56,28 @@ public class ChatRoomController {
 		return new ResponseEntity<>(this.chatRoomService.getUserRooms(username), HttpStatus.OK);
 	}
 
-	/**
-	 * Endpoint to get a ChatRoom by its ID
-	 * @param id
-	 * @return
-	 */
+
+
+	@GetMapping("/api/chatroom/{id}")
+	public ResponseEntity<ChatRoom> getChatRoom(@PathVariable Integer id, @RequestParam String username) {
+		Optional<ChatRoom> optionalRoom = chatRoomService.get(id);
+
+		if (optionalRoom.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		}
+
+		ChatRoom room = optionalRoom.get();
+
+		// Check if it's a private room
+		if (!room.getIsPublic() && !room.getJoinedUsers().stream()
+				.anyMatch(user -> user.getUsername().equalsIgnoreCase(username))) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		return ResponseEntity.ok(room);
+	}
+
+
 	@GetMapping("/{id}")
 	public ResponseEntity<Object> getChatRoom(@PathVariable Integer id) {
 		Optional<ChatRoom> chatRoom = this.chatRoomService.getChatRoomForFrontEnd(id);

@@ -63,26 +63,40 @@ public class MessagingService {
 
 
 		Optional<ChatUser> optionalUser = userService.get(msg.getSenderId());
-		if (optionalUser.isEmpty() || !isUserAuthenticated(optionalUser.get())) {
+		Optional<ChatRoom> optionalRoom = chatRoomService.get(msg.getChatId());
+
+		// Check if the room is the main public room
+		boolean isMainRoom = optionalRoom.isPresent() && optionalRoom.get().getIsPublic();
+
+		// If the room is not the main room, validate authentication
+		if (!isMainRoom && (optionalUser.isEmpty() || !isUserAuthenticated(optionalUser.get()))) {
 			logger.warn("Unauthorized message attempt from user ID: {}", msg.getSenderId());
 			throw new UnauthorizedException("User is not authenticated");
 		}
 
-		Optional<ChatRoom> optionalRoom = chatRoomService.get(msg.getChatId());
+		// If the room is the main room, allow read-only for unauthenticated users
+		if (isMainRoom && optionalUser.isEmpty()) {
+			logger.info("Non-authenticated user is reading messages in the main room.");
+			return null; // No message sending allowed for non-authenticated users
+		}
+
 		if (optionalRoom.isEmpty()) {
 			logger.warn("Chat room not found for chat ID: {}", msg.getChatId());
 			throw new RoomNotFoundException("Chat room not found");
 		}
 
-		ChatUser user = optionalUser.get();
+		ChatUser user = optionalUser.orElse(null); // Non-authenticated user will be null
 		ChatRoom room = optionalRoom.get();
 
-		Message message = messageService.create(user, room, msg.getContent(), msg.getDate());
+		// Process the message (only for authenticated users)
+		if (user != null) {
+			Message message = messageService.create(user, room, msg.getContent(), msg.getDate());
 
-		room.getJoinedUsers().stream().distinct().forEach(u -> {
-			String userQueueName = "queue-" + u.getUsername();
-			send(userQueueName, message, "chat"); // Specify messageType as "chat"
-		});
+			room.getJoinedUsers().stream().distinct().forEach(u -> {
+				String userQueueName = "queue-" + u.getUsername();
+				send(userQueueName, message, "chat");
+			});
+		}
 
 		return msg;
 	}
