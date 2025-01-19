@@ -12,7 +12,7 @@ public class JacksonConfig {
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.enable(SerializationFeature.FAIL_ON_EMPTY_BEANS); // Configure Jackson
+        objectMapper.enable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         objectMapper.registerModule(new JavaTimeModule());
         return objectMapper;
     }
