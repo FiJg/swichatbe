@@ -1,5 +1,7 @@
 package cz.osu.chatappbe.services.utility;
 
+import cz.osu.chatappbe.exceptions.RoomNotFoundException;
+import cz.osu.chatappbe.exceptions.UnauthorizedException;
 import cz.osu.chatappbe.models.entity.ChatRoom;
 import cz.osu.chatappbe.models.entity.ChatUser;
 import cz.osu.chatappbe.models.entity.Message;
@@ -45,23 +47,31 @@ public class MessagingService {
 	@Autowired
 	private SimpMessagingTemplate messagingTemplate;
 
+	@Autowired
+	private AuthService authService;
 
-	public PayloadMsg receivePublicMessage(PayloadMsg msg) {
+
+	public PayloadMsg receivePublicMessage(PayloadMsg msg) throws RoomNotFoundException, UnauthorizedException {
 		return this.receiveMessage(msg);
 	}
 
-	public PayloadMsg receiveGroupMessage(PayloadMsg msg) {
+	public PayloadMsg receiveGroupMessage(PayloadMsg msg) throws RoomNotFoundException, UnauthorizedException {
 		return this.receiveMessage(msg);
 	}
 
-	private PayloadMsg receiveMessage(PayloadMsg msg) {
+	private PayloadMsg receiveMessage(PayloadMsg msg) throws RoomNotFoundException, UnauthorizedException {
+
+
 		Optional<ChatUser> optionalUser = userService.get(msg.getSenderId());
-		Optional<ChatRoom> optionalRoom = chatRoomService.get(msg.getChatId());
+		if (optionalUser.isEmpty() || !isUserAuthenticated(optionalUser.get())) {
+			logger.warn("Unauthorized message attempt from user ID: {}", msg.getSenderId());
+			throw new UnauthorizedException("User is not authenticated");
+		}
 
-		if (optionalUser.isEmpty() || optionalRoom.isEmpty()) {
-			logger.warn("Either the user or chat room was not found for senderId: {} or chatId: {}",
-					msg.getSenderId(), msg.getChatId());
-			return null;
+		Optional<ChatRoom> optionalRoom = chatRoomService.get(msg.getChatId());
+		if (optionalRoom.isEmpty()) {
+			logger.warn("Chat room not found for chat ID: {}", msg.getChatId());
+			throw new RoomNotFoundException("Chat room not found");
 		}
 
 		ChatUser user = optionalUser.get();
@@ -77,7 +87,7 @@ public class MessagingService {
 		return msg;
 	}
 
-	public PayloadMsg receivePrivateMessage(PayloadMsg msg) {
+	public PayloadMsg receivePrivateMessage(PayloadMsg msg) throws RoomNotFoundException, UnauthorizedException {
 		return this.receiveMessage(msg);
 	}
 
@@ -175,4 +185,16 @@ public class MessagingService {
 		logger.info("Total messages received from queue {}: {}", queueName, receivedMessages.size());
 		return receivedMessages;
 	}
+
+
+	private boolean isUserAuthenticated(ChatUser user) {
+		// Check if the user is null
+		if (user == null || user.getUsername() == null) {
+			return false;
+		}
+
+		// Validate using the AuthService
+		return authService.isTokenValid(user.getUsername());
+	}
+
 }

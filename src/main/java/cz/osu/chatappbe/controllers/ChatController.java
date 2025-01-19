@@ -1,5 +1,7 @@
 package cz.osu.chatappbe.controllers;
 
+import cz.osu.chatappbe.exceptions.RoomNotFoundException;
+import cz.osu.chatappbe.exceptions.UnauthorizedException;
 import cz.osu.chatappbe.models.PayloadMsg;
 import cz.osu.chatappbe.services.utility.MessagingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +40,7 @@ public class ChatController {
 	 */
 	@MessageMapping("/message")
 	@SendTo("/chatroom/public")
-	public PayloadMsg receivePublicMessage(@Payload PayloadMsg msg) {
+	public PayloadMsg receivePublicMessage(@Payload PayloadMsg msg) throws RoomNotFoundException, UnauthorizedException {
 		return messagingService.receivePublicMessage(msg);
 	}
 
@@ -49,7 +51,7 @@ public class ChatController {
 	 */
 	@MessageMapping("/group-message")
 	@SendTo("/chatroom/public")
-	public PayloadMsg receiveGroupMessage(@Payload PayloadMsg msg) {
+	public PayloadMsg receiveGroupMessage(@Payload PayloadMsg msg) throws RoomNotFoundException, UnauthorizedException {
 		return messagingService.receiveGroupMessage(msg);
 	}
 
@@ -60,7 +62,7 @@ public class ChatController {
 	 */
 	@MessageMapping("/private-message")
 	@SendTo("/chatroom/public")
-	public PayloadMsg receivePrivateMessage(@Payload PayloadMsg msg) {
+	public PayloadMsg receivePrivateMessage(@Payload PayloadMsg msg) throws RoomNotFoundException, UnauthorizedException {
 		return messagingService.receivePrivateMessage(msg);
 	}
 

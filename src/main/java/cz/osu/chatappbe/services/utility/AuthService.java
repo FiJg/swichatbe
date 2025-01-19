@@ -28,4 +28,13 @@ public class AuthService {
 
 		return new ResponseEntity<>("Incorrect credentials.", HttpStatus.BAD_REQUEST);
 	}
+
+
+	public boolean isTokenValid(String username) {
+		// Retrieve the user based on the username
+		Optional<ChatUser> user = userService.get(username);
+
+		// Check if the user exists
+		return user.isPresent();
+	}
 }
