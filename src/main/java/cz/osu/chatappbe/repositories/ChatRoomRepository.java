@@ -27,5 +27,5 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Integer> {
 	Optional<ChatRoom> findByIdWithJoinedUsers(@Param("id") Integer id);
 
 
-
+	Optional<ChatRoom> findByName(String name);
 }

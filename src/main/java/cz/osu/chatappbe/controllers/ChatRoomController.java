@@ -93,7 +93,7 @@ public class ChatRoomController {
 	@GetMapping("/public")
 	public ResponseEntity<Object> getPublicChatRoom() {
 
-		Optional<ChatRoom> mainChatRoom = this.chatRoomService.getPublicRoomForFrontEnd();
+		Optional<ChatRoom> mainChatRoom = this.chatRoomService.getRoomByName("Main Chat");
 
 		if (mainChatRoom.isEmpty()) {
 			return new ResponseEntity<>("Main Chatroom not found.", HttpStatus.NOT_FOUND);
@@ -237,16 +237,22 @@ public class ChatRoomController {
 			return new ResponseEntity<>("Main Chatroom not found.", HttpStatus.NOT_FOUND);
 		}
 
-
 		ChatRoom room = mainChatRoom.get();
-		room.getMessages().forEach(message -> {
 
-			message.getRoom().setMessages(new ArrayList<>());
-			message.getUser().setMessages(new ArrayList<>());
-			message.getUser().setJoinedChatRooms(new ArrayList<>());
+		room.getMessages().forEach(message -> {
+			if (message.getRoom() != null) {
+				message.getRoom().setMessages(new ArrayList<>());
+			}
+			if (message.getUser() != null) {
+				message.getUser().setMessages(new ArrayList<>());
+				message.getUser().setJoinedChatRooms(new ArrayList<>());
+			}
 		});
 
 		return new ResponseEntity<>(room.getMessages(), HttpStatus.OK);
 	}
+
+
+
 
 }

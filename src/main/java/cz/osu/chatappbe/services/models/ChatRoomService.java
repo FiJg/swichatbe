@@ -23,6 +23,10 @@ public class ChatRoomService {
 		return repository.findByIdWithJoinedUsers(id);
 	}
 
+	public Optional<ChatRoom> getRoomByName(String name) {
+		return repository.findByName(name);
+	}
+
 	public ChatRoom create(ChatUser user, ChatUser chatUser) {
 		ChatRoom chatRoom = new ChatRoom();
 
@@ -165,4 +169,7 @@ public class ChatRoomService {
 
 		return room;
 	}
+
+
+
 }

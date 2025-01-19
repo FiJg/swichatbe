@@ -66,4 +66,6 @@ public class ChatController {
 		return messagingService.receivePrivateMessage(msg);
 	}
 
+
+
 }
