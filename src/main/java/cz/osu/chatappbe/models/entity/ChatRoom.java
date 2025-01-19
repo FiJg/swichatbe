@@ -57,9 +57,9 @@ public class ChatRoom implements Serializable {
 	}
 
 
-	public Integer getOwnerInt() {
-		return owner.getId();
-	}
+	//public Integer getOwnerInt() {
+	//	return owner.getId();
+	//}
 
 
 	public ChatUser getOwner() {
