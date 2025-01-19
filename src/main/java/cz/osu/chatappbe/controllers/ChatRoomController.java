@@ -92,15 +92,22 @@ public class ChatRoomController {
 	 */
 	@GetMapping("/public")
 	public ResponseEntity<Object> getPublicChatRoom() {
-		ChatRoom room = this.chatRoomService.getPublicRoomForFrontEnd().get();
-		room.setJoinedUsers(new ArrayList<>());
+
+		Optional<ChatRoom> mainChatRoom = this.chatRoomService.getPublicRoomForFrontEnd();
+
+		if (mainChatRoom.isEmpty()) {
+			return new ResponseEntity<>("Main Chatroom not found.", HttpStatus.NOT_FOUND);
+		}
+
+		ChatRoom room = mainChatRoom.get();
 		room.getMessages().forEach(message -> {
+			// Clear cyclic references for front-end compatibility
 			message.getRoom().setMessages(new ArrayList<>());
 			message.getUser().setMessages(new ArrayList<>());
 			message.getUser().setJoinedChatRooms(new ArrayList<>());
 		});
-
 		return new ResponseEntity<>(room, HttpStatus.OK);
+
 	}
 
 	/**
@@ -220,4 +227,26 @@ public class ChatRoomController {
 
 		return new ResponseEntity<>(this.chatRoomService.prepareRoomForFrontEnd(chatRoom.get()), HttpStatus.OK);
 	}
+
+
+	@GetMapping("/public/messages")
+	public ResponseEntity<Object> getMainChatMessages() {
+		Optional<ChatRoom> mainChatRoom = this.chatRoomService.getPublicRoomForFrontEnd();
+
+		if (mainChatRoom.isEmpty()) {
+			return new ResponseEntity<>("Main Chatroom not found.", HttpStatus.NOT_FOUND);
+		}
+
+
+		ChatRoom room = mainChatRoom.get();
+		room.getMessages().forEach(message -> {
+
+			message.getRoom().setMessages(new ArrayList<>());
+			message.getUser().setMessages(new ArrayList<>());
+			message.getUser().setJoinedChatRooms(new ArrayList<>());
+		});
+
+		return new ResponseEntity<>(room.getMessages(), HttpStatus.OK);
+	}
+
 }
