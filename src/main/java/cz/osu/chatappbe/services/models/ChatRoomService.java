@@ -1,5 +1,6 @@
 package cz.osu.chatappbe.services.models;
 
+import cz.osu.chatappbe.exceptions.UserNotFoundException;
 import cz.osu.chatappbe.models.ChatForm;
 import cz.osu.chatappbe.models.entity.ChatRoom;
 import cz.osu.chatappbe.models.entity.ChatUser;

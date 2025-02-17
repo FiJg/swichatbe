@@ -6,7 +6,7 @@ import cz.osu.chatappbe.models.entity.ChatRoom;
 import cz.osu.chatappbe.models.entity.ChatUser;
 import cz.osu.chatappbe.repositories.UserRepository;
 import cz.osu.chatappbe.services.models.ChatRoomService;
-import cz.osu.chatappbe.services.models.UserNotFoundException;
+import cz.osu.chatappbe.exceptions.UserNotFoundException;
 import cz.osu.chatappbe.services.models.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -101,7 +101,7 @@ public class ChatRoomController {
 
 		ChatRoom room = mainChatRoom.get();
 		room.getMessages().forEach(message -> {
-			// Clear cyclic references for front-end compatibility
+
 			message.getRoom().setMessages(new ArrayList<>());
 			message.getUser().setMessages(new ArrayList<>());
 			message.getUser().setJoinedChatRooms(new ArrayList<>());

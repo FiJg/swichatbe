@@ -4,7 +4,7 @@ import cz.osu.chatappbe.models.ChatForm;
 import cz.osu.chatappbe.models.entity.ChatUser;
 import cz.osu.chatappbe.models.SignupForm;
 import cz.osu.chatappbe.services.models.ChatRoomService;
-import cz.osu.chatappbe.services.models.UserNotFoundException;
+import cz.osu.chatappbe.exceptions.UserNotFoundException;
 import cz.osu.chatappbe.services.models.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
